@@ -11,6 +11,8 @@ WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV="production"
+# Fly routes to internal_port 8080 (see fly.toml); the server reads PORT.
+ENV PORT=8080
 
 
 # Throw-away build stage to reduce size of final image
@@ -20,14 +22,19 @@ FROM base AS build
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
 
-# Install node modules
+# Install node modules. This is an npm workspaces monorepo, so every workspace's
+# package.json must be present before `npm ci` or their devDependencies
+# (typescript, vite, tsx, ...) will not be installed.
 COPY package-lock.json package.json ./
+COPY shared/package.json ./shared/
+COPY server/package.json ./server/
+COPY client/package.json ./client/
 RUN npm ci --include=dev
 
 # Copy application code
 COPY . .
 
-# Build application
+# Build all workspaces (shared -> server -> client)
 RUN npm run build
 
 # Remove development dependencies
@@ -37,9 +44,9 @@ RUN npm prune --omit=dev
 # Final stage for app image
 FROM base
 
-# Copy built application
+# Copy built application (includes shared/dist, server/dist, client/dist)
 COPY --from=build /app /app
 
-# Start the server by default, this can be overwritten at runtime
-EXPOSE 3000
+# Start the server, which also serves the built client on the same port
+EXPOSE 8080
 CMD [ "npm", "run", "start" ]
