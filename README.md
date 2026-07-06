@@ -5,6 +5,8 @@ A full-stack React + Express app that fetches current weather from **three provi
 - Headline panel: the **average** across all successful providers (temperature, feels-like, humidity, wind, most common condition).
 - Source cards below: each provider's individual report, with graceful error states for any that fail.
 
+Check it out here: [Weather Aggregator](https://weather-aggregator.fly.dev/)
+
 ## Providers
 
 | Provider | API key required |
